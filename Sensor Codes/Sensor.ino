@@ -45,9 +45,24 @@ void loop() {
 
   if (value == HIGH) {
     // Motion detected
-    delay(1000); // Detect every 1s
+    delay(1000);
     motionCount++;
     // Serial.println("1");
+    if(WiFi.status() == WL_CONNECTED) {
+      WiFiClientSecure client;
+      HTTPClient http;
+      client.setInsecure();
+
+      // API LightPole Call if Motion found
+      http.begin(client, APITest);
+      http.addHeader("Content-Type", "application/json");
+      String additionalData = "{\"sensorID\":" + String(chipId) + "}";
+      // Serial.println(additionalData);
+      int additionalResponseCode = http.POST(additionalData.c_str());
+      Serial.print("API HTTP Response code: ");
+      Serial.println(additionalResponseCode);
+      http.end();
+      
     Serial.println("Total count: " +String(motionCount));
   }
 
@@ -59,21 +74,8 @@ void loop() {
       HTTPClient http;
 
       client.setInsecure();
-      
-      if (motionCount >= 1) { // API LightPole Call if Motion found
-        http.begin(client, APITest);
-        http.addHeader("Content-Type", "application/json");
-        String additionalData = "{\"sensorID\":" + String(chipId) + "}";
-        // Serial.println(additionalData);
-        int additionalResponseCode = http.POST(additionalData.c_str());
-        Serial.print("API HTTP Response code: ");
-        Serial.println(additionalResponseCode);
-        http.end();
-        } else {
-        Serial.println("No motion found, LightPole API is not called");
-        }
 
-      // DB Data Save (Save regardless of the value in motionCount)
+      // DB Data Save
       http.begin(client, DB);
       http.addHeader("Content-Type", "application/json");
       String httpRequestData = "{\"sensorID\":" + String(chipId) + ",\"motionCount\":" + String(motionCount) + "}";           
